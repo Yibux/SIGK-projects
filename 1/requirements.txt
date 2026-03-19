@@ -2,3 +2,6 @@ numpy
 torch
 scikit-image
 opencv-python
+lpips
+matplotlib
+ipykernel

@@ -7,18 +7,21 @@ import os
 from datetime import datetime
 import json
 from PIL import Image
+import numpy as np
 
 from datasets import SuperResolutionDataset, DenoisingDataset
 from models import SimpleUNet
 from metrics import calculate_metrics
-train_image_paths = glob("../dataset/DIV2K_train_HR/*.png")
-test_image_paths = glob("../dataset/DIV2K_valid_HR/*.png")
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+dataset_dir = os.path.abspath(os.path.join(base_dir, "..", "..", "dataset"))
+train_image_paths = glob(os.path.join(dataset_dir, "DIV2K_train_HR", "*.png"))
+test_image_paths = glob(os.path.join(dataset_dir, "DIV2K_valid_HR", "*.png"))
 
 def train_model(task, num_epochs=10, batch_size=40, learning_rate=1e-4, criterion=nn.MSELoss()):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Training on device: {device}")
-    startDateTime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     dataset = SuperResolutionDataset(train_image_paths) if task == "super_resolution" else DenoisingDataset(train_image_paths)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
@@ -53,16 +56,18 @@ def train_model(task, num_epochs=10, batch_size=40, learning_rate=1e-4, criterio
         
         torch.save(model.state_dict(), f"outputs/{dirname}/unet_model_epoch_{epoch+1}_{task}_{epoch_loss:.4f}.pth")
 
-def evaluate_and_save(model_path, task):
+def evaluate_and_save(model_path, task, criterion='', learning_rate=''):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Ocenianie na: {device}")
     
     model = SimpleUNet().to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
     model.eval()
-    
     dataset = SuperResolutionDataset(test_image_paths) if task == "super_resolution" else DenoisingDataset(test_image_paths)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+    if len(dataloader) == 0:
+        print("Błąd: Nie znaleziono obrazów testowych. Przerywam ewaluację.")
+        return
     
     total_psnr, total_ssim, total_lpips = 0.0, 0.0, 0.0
     os.makedirs("outputs/eval_results", exist_ok=True)
@@ -88,14 +93,13 @@ def evaluate_and_save(model_path, task):
                 Image.fromarray((pred_img * 255).astype(np.uint8)).save(f"outputs/eval_results/sample_{idx}_pred.png")
                 Image.fromarray((target_img * 255).astype(np.uint8)).save(f"outputs/eval_results/sample_{idx}_target.png")
                 
-    results = {
+    return {
         "Task": task,
+        "Criterion": criterion,
+        "Learning Rate": learning_rate,
+        "Model File": os.path.basename(model_path),
         "Samples": len(dataloader),
-        "PSNR": total_psnr / len(dataloader),
-        "SSIM": total_ssim / len(dataloader),
-        "LPIPS": total_lpips / len(dataloader)
+        "PSNR": float(total_psnr / len(dataloader)),
+        "SSIM": float(total_ssim / len(dataloader)),
+        "LPIPS": float(total_lpips / len(dataloader))
     }
-    
-    with open("outputs/eval_results/metrics.json", "w") as f:
-        json.dump(results, f, indent=4)
-    print("Zapisano wyniki do outputs/eval_results/metrics.json!")

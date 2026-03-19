@@ -5,3 +5,4 @@ opencv-python
 lpips
 matplotlib
 ipykernel
+pandas

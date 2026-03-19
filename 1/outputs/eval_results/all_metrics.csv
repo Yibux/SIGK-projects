@@ -1,0 +1,7 @@
+Task,Criterion,Learning Rate,Model File,Samples,PSNR,SSIM,LPIPS
+super_resolution,MSELoss,0.0001,unet_model_epoch_20_super_resolution_0.0162.pth,100,18.350536727644638,0.42030584812164307,0.6158380630612373
+super_resolution,L1Loss,0.0001,unet_model_epoch_20_super_resolution_0.0879.pth,100,18.402730536087322,0.42977797985076904,0.6046932241320611
+super_resolution,MSELoss,0.0005,unet_model_epoch_20_super_resolution_0.0144.pth,100,19.084554471704504,0.45532381534576416,0.5574076229333877
+super_resolution,L1Loss,0.0005,unet_model_epoch_20_super_resolution_0.0792.pth,100,19.001358202272556,0.4606963098049164,0.5519167183339596
+super_resolution,MSELoss,0.001,unet_model_epoch_20_super_resolution_0.0141.pth,100,19.38508003755787,0.48190444707870483,0.5271458607912064
+super_resolution,L1Loss,0.001,unet_model_epoch_20_super_resolution_0.0778.pth,100,19.201328556031104,0.4664231538772583,0.5511185881495476

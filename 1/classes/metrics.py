@@ -5,6 +5,11 @@ from skimage.metrics import structural_similarity as ssim
 from skimage.restoration import denoise_bilateral
 import lpips
 
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="torchvision.models._utils")
+warnings.filterwarnings("ignore", category=FutureWarning, module="lpips.lpips")
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 loss_fn_vgg = lpips.LPIPS(net='vgg').to(device)
 

@@ -1,47 +1,71 @@
 import os
 import pandas as pd
 from services import evaluate_and_save
-        
+
+from constants import tasks, num_epochs, learning_rate, criterions, models
+
 def evaluate_all_models():
-    tasks = ["super_resolution"]
-    num_epochs = [5, 10, 15, 20]
-    learning_rate = [1e-4, 5e-4, 1e-3]
-    criterions = ['MSELoss', 'L1Loss']
     df_results = []
     
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for task in tasks:
-        for lr in learning_rate:
-            for criterion in criterions:                
-                model_path = os.path.join(base_dir, "outputs", f"{task}_{criterion}_{lr}")
-                
-                if os.path.exists(model_path):
-                    files = os.listdir(model_path)
-                    
-                    pth_files = [f for f in files if f.endswith('.pth')]
-                    
-                    if pth_files:
-                        last_model = sorted(pth_files, key=lambda x: int(x.split('_')[3]))[-1]
-                        
-                        print(f"Evaluating model: {last_model} for task: {task}")
-                        result = evaluate_and_save(os.path.join(model_path, last_model), task, criterion, lr)
-                        df_results.append(result)
-                        
+    outputs_dir = os.path.join(base_dir, "outputs")
+    
+    if not os.path.exists(outputs_dir):
+        print("No output folder found.")
+        return
+
+    crit_names = [c if isinstance(c, str) else type(c).__name__ for c in criterions]
+    lr_strings = [str(lr) for lr in learning_rate]
+
+    for folder_name in os.listdir(outputs_dir):
+        if folder_name == "eval_results":
+            continue
+            
+        folder_path = os.path.join(outputs_dir, folder_name)
+        if not os.path.isdir(folder_path):
+            continue
+            
+        folder_tokens = folder_name.split('_')
+        
+        current_task = next((t for t in tasks if t in folder_name), "unknown_task")
+        current_crit = next((c for c in crit_names if c in folder_tokens), "unknown_criterion")
+        current_lr = next((lr for lr in lr_strings if lr in folder_tokens), "unknown_lr")
+
+        pth_files = [f for f in os.listdir(folder_path) if f.endswith('.pth')]
+        
+        valid_models = []
+        for f in pth_files:
+            try:
+                epoch_num = int(f.split('_')[3])
+                if epoch_num in num_epochs:
+                    valid_models.append((epoch_num, f))
+            except (IndexError, ValueError):
+                continue
+        
+        if valid_models:
+            best_epoch, best_model_file = max(valid_models, key=lambda x: x[0])
+            
+            print(f"Evaluating model: {best_model_file} | Task: {current_task}")
+            
+            model_full_path = os.path.join(folder_path, best_model_file)
+            result = evaluate_and_save(model_full_path, current_task, current_crit, current_lr)
+            
+            if result:
+                df_results.append(result)
+
     if df_results:
         df = pd.DataFrame(df_results)
-        
-        eval_dir = os.path.join(base_dir, "outputs", "eval_results")
+        eval_dir = os.path.join(outputs_dir, "eval_results")
         os.makedirs(eval_dir, exist_ok=True)
         
         csv_path = os.path.join(eval_dir, "all_metrics.csv")
         df.to_csv(csv_path, index=False)
-        print(f"\n======================================")
+        print(f"\n{'='*40}")
         print(f"Results saved to: {csv_path}")
-        print(f"======================================")
+        print(f"{'='*40}")
         print(df)
     else:
-        print("Results list is empty. No metrics to save.")   
-
+        print("No models evaluated. Make sure models match epochs in constants.")
 
 if __name__ == "__main__":
     evaluate_all_models()

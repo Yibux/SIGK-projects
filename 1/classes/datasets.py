@@ -8,6 +8,7 @@ from skimage.util import random_noise
 class DenoisingDataset(Dataset):
     def __init__(self, image_paths):
         self.image_paths = image_paths
+        self.input_size = (256, 256)
 
     def __len__(self):
         return len(self.image_paths)
@@ -16,6 +17,8 @@ class DenoisingDataset(Dataset):
         img_path = self.image_paths[idx]
         clean_image = cv2.imread(img_path)
         clean_image = cv2.cvtColor(clean_image, cv2.COLOR_BGR2RGB)
+        
+        clean_image = cv2.resize(clean_image, self.input_size, interpolation=cv2.INTER_CUBIC)
         
         clean_image_normalized = clean_image.astype(np.float32) / 255.0
         

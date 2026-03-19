@@ -19,15 +19,14 @@ dataset_dir = os.path.abspath(os.path.join(base_dir, "..", "..", "dataset"))
 train_image_paths = glob(os.path.join(dataset_dir, "DIV2K_train_HR", "*.png"))
 test_image_paths = glob(os.path.join(dataset_dir, "DIV2K_valid_HR", "*.png"))
 
-def train_model(task, num_epochs=10, batch_size=40, learning_rate=1e-4, criterion=nn.MSELoss()):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Training on device: {device}")
+def train_model(task, num_epochs=10, batch_size=10, learning_rate=1e-4, criterion=nn.MSELoss(), model = SimpleUNet(), device=torch.device("cpu")):
     dataset = SuperResolutionDataset(train_image_paths) if task == "super_resolution" else DenoisingDataset(train_image_paths)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    model = SimpleUNet().to(device)
-    criterion = criterion
+    model = model.to(device)
+    criterion = criterion.to(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    dirname = f"{type(model).__name__}_{task}_{type(criterion).__name__}_{learning_rate}_{num_epochs}"
     
     for epoch in range(num_epochs):
         model.train()
@@ -50,17 +49,16 @@ def train_model(task, num_epochs=10, batch_size=40, learning_rate=1e-4, criterio
         epoch_loss = running_loss / len(dataloader)
         print(f"--- End of epoch {epoch+1}. Average loss: {epoch_loss:.4f} ---")
         
-        dirname = f"{task}_{type(criterion).__name__}_{learning_rate}_{epoch}"
-        if dirname not in [d.name for d in os.scandir('outputs') if d.is_dir()]:
-            os.makedirs(f"outputs/{dirname}", exist_ok=True)
+        if dirname not in [d.name for d in os.scandir('1/outputs') if d.is_dir()]:
+            os.makedirs(f"1/outputs/{dirname}", exist_ok=True)
         
-        torch.save(model.state_dict(), f"outputs/{dirname}/unet_model_epoch_{epoch+1}_{task}_{epoch_loss:.4f}.pth")
+        torch.save(model.state_dict(), f"1/outputs/{dirname}/{type(model).__name__}_model_epoch_{epoch+1}_{task}_{epoch_loss:.4f}.pth")
 
-def evaluate_and_save(model_path, task, criterion='', learning_rate=''):
+def evaluate_and_save(model_path, task, criterion='', learning_rate='', model=SimpleUNet()):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Ocenianie na: {device}")
     
-    model = SimpleUNet().to(device)
+    model = model.to(device)
     model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
     model.eval()
     dataset = SuperResolutionDataset(test_image_paths) if task == "super_resolution" else DenoisingDataset(test_image_paths)

@@ -5,11 +5,14 @@ from torch.utils.data import DataLoader
 from glob import glob
 import os
 from datetime import datetime
+import json
+from PIL import Image
 
 from datasets import SuperResolutionDataset, DenoisingDataset
 from models import SimpleUNet
 from metrics import calculate_metrics
 train_image_paths = glob("../dataset/DIV2K_train_HR/*.png")
+test_image_paths = glob("../dataset/DIV2K_valid_HR/*.png")
 
 
 def train_model(task, num_epochs=10, batch_size=40, learning_rate=1e-4, criterion=nn.MSELoss()):
@@ -44,58 +47,55 @@ def train_model(task, num_epochs=10, batch_size=40, learning_rate=1e-4, criterio
         epoch_loss = running_loss / len(dataloader)
         print(f"--- End of epoch {epoch+1}. Average loss: {epoch_loss:.4f} ---")
         
-        dirname = f"{task}_{type(criterion).__name__}_{learning_rate}_{startDateTime}"
+        dirname = f"{task}_{type(criterion).__name__}_{learning_rate}_{epoch}"
         if dirname not in [d.name for d in os.scandir('outputs') if d.is_dir()]:
             os.makedirs(f"outputs/{dirname}", exist_ok=True)
         
         torch.save(model.state_dict(), f"outputs/{dirname}/unet_model_epoch_{epoch+1}_{task}_{epoch_loss:.4f}.pth")
-    
-def evaluate_model_on_test_set(model, test_image_paths, task):
+
+def evaluate_and_save(model_path, task):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
-    model.to(device)
+    print(f"Ocenianie na: {device}")
+    
+    model = SimpleUNet().to(device)
+    model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     
     dataset = SuperResolutionDataset(test_image_paths) if task == "super_resolution" else DenoisingDataset(test_image_paths)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
     
-    total_psnr = 0.0
-    total_ssim = 0.0
-    total_lpips = 0.0
+    total_psnr, total_ssim, total_lpips = 0.0, 0.0, 0.0
+    os.makedirs("outputs/eval_results", exist_ok=True)
     
+    print(f"Rozpoczynam ewaluację {len(dataloader)} obrazów...")
     with torch.no_grad():
         for idx, (inputs, targets) in enumerate(dataloader):
-            inputs = inputs.to(device)
-            targets = targets.to(device)
+            inputs, targets = inputs.to(device), targets.to(device)
             
-            outputs = model(inputs)
+            outputs = torch.clamp(model(inputs), 0, 1)
             
-            outputs = torch.clamp(outputs, 0, 1)
-            
+            input_img = inputs.squeeze(0).cpu().numpy().transpose(1, 2, 0)
             pred_img = outputs.squeeze(0).cpu().numpy().transpose(1, 2, 0)
             target_img = targets.squeeze(0).cpu().numpy().transpose(1, 2, 0)
             
             metrics = calculate_metrics(target_img, pred_img)
-            
             total_psnr += metrics["PSNR"]
             total_ssim += metrics["SSIM"]
             total_lpips += metrics["LPIPS"]
             
-            print(f"Processed image {idx+1}/{len(dataloader)}")
-            
-    num_samples = len(dataloader)
-    avg_psnr = total_psnr / num_samples
-    avg_ssim = total_ssim / num_samples
-    avg_lpips = total_lpips / num_samples
-    
-    print("\n=== EVALUATION RESULTS ===")
-    print(f"Task: {task}")
-    print(f"Average PSNR:  {avg_psnr:.4f}")
-    print(f"Average SSIM:  {avg_ssim:.4f}")
-    print(f"Average LPIPS: {avg_lpips:.4f}")
-    
-    return {
-        "PSNR": avg_psnr,
-        "SSIM": avg_ssim,
-        "LPIPS": avg_lpips
+            if idx < 3:
+                Image.fromarray((input_img * 255).astype(np.uint8)).save(f"outputs/eval_results/sample_{idx}_input.png")
+                Image.fromarray((pred_img * 255).astype(np.uint8)).save(f"outputs/eval_results/sample_{idx}_pred.png")
+                Image.fromarray((target_img * 255).astype(np.uint8)).save(f"outputs/eval_results/sample_{idx}_target.png")
+                
+    results = {
+        "Task": task,
+        "Samples": len(dataloader),
+        "PSNR": total_psnr / len(dataloader),
+        "SSIM": total_ssim / len(dataloader),
+        "LPIPS": total_lpips / len(dataloader)
     }
+    
+    with open("outputs/eval_results/metrics.json", "w") as f:
+        json.dump(results, f, indent=4)
+    print("Zapisano wyniki do outputs/eval_results/metrics.json!")

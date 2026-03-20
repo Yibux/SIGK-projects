@@ -12,7 +12,7 @@ if __name__ == "__main__":
         for epoch in num_epochs:
             for lr in learning_rate:
                 for criterion in criterions:
-                    print(f"Training {task} for {epoch} epochs with learning rate {lr} and criterion {type(criterion).__name__} and model {type(models[0]).__name__}")
                     for model in models:
+                        print(f"Training {task} for {epoch} epochs with learning rate {lr} and criterion {type(criterion).__name__} and model {type(model).__name__}")
                         trained_model = train_model(task, num_epochs=epoch, learning_rate=lr, criterion=criterion, model=model, device=device)
                         trained_models.append(trained_model)

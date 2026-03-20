@@ -1,3 +1,5 @@
+import pandas as pd
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -11,7 +13,7 @@ import numpy as np
 
 from datasets import SuperResolutionDataset, DenoisingDataset
 from models import SimpleUNet
-from metrics import calculate_metrics
+from metrics import apply_baseline_denoising, calculate_metrics
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -101,3 +103,58 @@ def evaluate_and_save(model_path, task, criterion='', learning_rate='', model=Si
         "SSIM": float(total_ssim / len(dataloader)),
         "LPIPS": float(total_lpips / len(dataloader))
     }
+    
+def evaluate_baselines():    
+    print("Evaluation: OpenCV Bicubic Interpolation (Super-Resolution)...")
+    sr_dataset = SuperResolutionDataset(test_image_paths)
+    sr_metrics = {"PSNR": 0.0, "SSIM": 0.0, "LPIPS": 0.0}
+    
+    for i in range(len(sr_dataset)):
+        lr_tensor, hr_tensor = sr_dataset[i]
+        
+        pred_img = lr_tensor.numpy().transpose((1, 2, 0))
+        target_img = hr_tensor.numpy().transpose((1, 2, 0))
+        
+        metrics = calculate_metrics(target_img, pred_img)
+        sr_metrics["PSNR"] += metrics["PSNR"]
+        sr_metrics["SSIM"] += metrics["SSIM"]
+        sr_metrics["LPIPS"] += metrics["LPIPS"]
+        
+    num_sr = len(sr_dataset)
+    sr_results = {
+        "Metoda": "bicubic_interpolation_super_resolution",
+        "PSNR": sr_metrics["PSNR"] / num_sr,
+        "SSIM": sr_metrics["SSIM"] / num_sr,
+        "LPIPS": sr_metrics["LPIPS"] / num_sr
+    }
+    
+    print("Evaluation: skimage denoise_bilateral (Denoising)...")
+    dn_dataset = DenoisingDataset(test_image_paths)
+    dn_metrics = {"PSNR": 0.0, "SSIM": 0.0, "LPIPS": 0.0}
+    
+    for i in range(len(dn_dataset)):
+        noisy_tensor, clean_tensor = dn_dataset[i]
+        
+        noisy_img = noisy_tensor.numpy().transpose((1, 2, 0))
+        target_img = clean_tensor.numpy().transpose((1, 2, 0))
+        
+        pred_img = apply_baseline_denoising(noisy_img)
+        
+        metrics = calculate_metrics(target_img, pred_img)
+        dn_metrics["PSNR"] += metrics["PSNR"]
+        dn_metrics["SSIM"] += metrics["SSIM"]
+        dn_metrics["LPIPS"] += metrics["LPIPS"]
+        
+    num_dn = len(dn_dataset)
+    dn_results = {
+        "Metoda": "denoise_bilateral_skimage",
+        "PSNR": dn_metrics["PSNR"] / num_dn,
+        "SSIM": dn_metrics["SSIM"] / num_dn,
+        "LPIPS": dn_metrics["LPIPS"] / num_dn
+    }
+    
+    df_baselines = pd.DataFrame([sr_results, dn_results])
+    
+    df_baselines = df_baselines.round(4)
+    
+    return df_baselines

@@ -47,7 +47,7 @@ def evaluate_all_models():
             model_str = best_model_file.split('_')[0]
             model = models[0] if model_str == "SimpleUNet" else models[1] if model_str == "BetterUNet" else models[2]
                         
-            print(f"\nEvaluating best model for {current_task} | Criterion: {current_crit} | LR: {current_lr} | Model: {model} | Epoch: {best_epoch}")
+            print(f"\nEvaluating best model for {current_task} | Criterion: {current_crit} | LR: {current_lr} | Model: {model_str} | Epoch: {best_epoch}")
             model_full_path = os.path.join(folder_path, best_model_file)
             result = evaluate_and_save(model_full_path, current_task, current_crit, current_lr, model)
             
@@ -67,10 +67,6 @@ def evaluate_all_models():
         print(df)
     else:
         print("No models evaluated. Make sure models match epochs in constants.")
-
-def evaluate_single_model(model_path, task, criterion, lr, model):
-    print(f"\nEvaluating model: {model_path} | Task: {task} | Criterion: {criterion} | LR: {lr} | Model: {model}")
-    return evaluate_and_save(model_path, task, criterion, lr, model)
 
 if __name__ == "__main__":
     evaluate_all_models()

@@ -45,8 +45,9 @@ def train_model(task, num_epochs=10, batch_size=10, learning_rate=1e-4, criterio
             loss.backward()
             
             optimizer.step()
-            running_loss += loss.item()
-            print(f"Epoch [{epoch+1}/{num_epochs}], Step [{batch_idx}/{len(dataloader)}], Loss: {loss.item():.4f}")
+            running_loss += loss.item()    
+        
+        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}")
         
         epoch_loss = running_loss / len(dataloader)
         print(f"--- End of epoch {epoch+1}. Average loss: {epoch_loss:.4f} ---")

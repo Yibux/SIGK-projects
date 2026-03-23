@@ -47,10 +47,13 @@ def train_model(task, num_epochs=10, batch_size=10, learning_rate=1e-4, criterio
             optimizer.step()
             running_loss += loss.item()    
         
-        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}")
+        if epoch % 5 == 0:
+            print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}")
         
         epoch_loss = running_loss / len(dataloader)
-        print(f"--- End of epoch {epoch+1}. Average loss: {epoch_loss:.4f} ---")
+        
+        if epoch % 5 == 0:
+            print(f"--- End of epoch {epoch+1}. Average loss: {epoch_loss:.4f} ---")
         
         if dirname not in [d.name for d in os.scandir('1/outputs') if d.is_dir()]:
             os.makedirs(f"1/outputs/{dirname}", exist_ok=True)

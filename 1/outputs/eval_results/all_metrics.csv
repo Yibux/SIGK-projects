@@ -1,0 +1,23 @@
+Task,Criterion,Learning Rate,Model File,Samples,PSNR,SSIM,LPIPS
+denoising,CombinedPerceptualLoss,0.0001,BetterUNet_model_epoch_20_denoising_0.0346.pth,100,31.734666372098886,0.9530280828475952,0.06877520885318518
+denoising,L1Loss,0.0001,BetterUNet_model_epoch_20_denoising_0.0308.pth,100,29.79521211790052,0.9321244955062866,0.09376442562788725
+denoising,MSELoss,0.0001,BetterUNet_model_epoch_20_denoising_0.0018.pth,100,31.163351891698472,0.9399828910827637,0.08845859784632921
+super_resolution,CombinedPerceptualLoss,0.0001,BetterUNet_model_epoch_20_super_resolution_0.1168.pth,100,19.49525955135825,0.5062248110771179,0.41008255928754805
+super_resolution,L1Loss,0.0001,BetterUNet_model_epoch_20_super_resolution_0.0757.pth,100,19.39971816235581,0.4933476150035858,0.5306783121824264
+super_resolution,L1Loss,0.0005,BetterUNet_model_epoch_20_super_resolution_0.0759.pth,100,19.475497610337108,0.5049059391021729,0.5311098252236843
+super_resolution,MSELoss,0.0001,BetterUNet_model_epoch_20_super_resolution_0.0141.pth,100,19.456407915835612,0.48967444896698,0.526223663687706
+super_resolution,MSELoss,0.0005,BetterUNet_model_epoch_20_super_resolution_0.0145.pth,100,19.369332398548853,0.49675849080085754,0.5233133879303932
+denoising,CombinedPerceptualLoss,0.0001,ResNetRestoration_model_epoch_20_denoising_0.0199.pth,100,34.56870285911167,0.9610568881034851,0.05646170231513679
+denoising,L1Loss,0.0001,ResNetRestoration_model_epoch_20_denoising_0.0162.pth,100,33.27939125640325,0.9540860652923584,0.07188990355469287
+super_resolution,CombinedPerceptualLoss,0.0001,ResNetRestoration_model_epoch_20_super_resolution_0.1215.pth,100,19.482708008223618,0.5053879022598267,0.49660282224416735
+super_resolution,L1Loss,0.0001,ResNetRestoration_model_epoch_20_super_resolution_0.0716.pth,100,19.51918666371305,0.5044201016426086,0.5250140522420407
+super_resolution,L1Loss,0.0005,ResNetRestoration_model_epoch_20_super_resolution_0.0707.pth,100,19.639694250312424,0.5096819996833801,0.5274974325299263
+super_resolution,MSELoss,0.0001,ResNetRestoration_model_epoch_20_super_resolution_0.0133.pth,100,19.47118043042871,0.5002449750900269,0.5285097259283066
+super_resolution,MSELoss,0.0005,ResNetRestoration_model_epoch_20_super_resolution_0.0132.pth,100,19.549127319364718,0.500526487827301,0.5298074850440025
+denoising,L1Loss,0.0001,SimpleUNet_model_epoch_20_denoising_0.0517.pth,100,22.76373016738263,0.7659608721733093,0.27605814531445505
+denoising,MSELoss,0.0001,SimpleUNet_model_epoch_20_denoising_0.0110.pth,100,20.138060043048277,0.6151195764541626,0.43560575038194654
+super_resolution,CombinedPerceptualLoss,0.0001,SimpleUNet_model_epoch_20_super_resolution_0.1323.pth,100,19.111160638201156,0.46244528889656067,0.5339695462584495
+super_resolution,L1Loss,0.0001,SimpleUNet_model_epoch_20_super_resolution_0.0786.pth,100,19.06873246882458,0.4554852247238159,0.5547420632839203
+super_resolution,L1Loss,0.0005,SimpleUNet_model_epoch_20_super_resolution_0.0751.pth,100,19.247636423915413,0.4823552072048187,0.5305269768834114
+super_resolution,MSELoss,0.0001,SimpleUNet_model_epoch_20_super_resolution_0.0149.pth,100,18.874848581032154,0.44706976413726807,0.5601235970854759
+super_resolution,MSELoss,0.0005,SimpleUNet_model_epoch_20_super_resolution_0.0137.pth,100,19.43428732227348,0.4921833872795105,0.5213997375965118

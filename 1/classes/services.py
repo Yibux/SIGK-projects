@@ -34,7 +34,7 @@ def train_model(task, num_epochs=10, batch_size=10, learning_rate=1e-4, criterio
         model.train()
         running_loss = 0.0
         
-        for batch_idx, (inputs, targets) in enumerate(dataloader):
+        for _, (inputs, targets) in enumerate(dataloader):
             inputs = inputs.to(device)
             targets = targets.to(device)
             
@@ -65,7 +65,7 @@ def evaluate_and_save(model_path, task, criterion='', learning_rate='', model=Si
     print(f"Ocenianie na: {device}")
     
     model = model.to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))
     model.eval()
     dataset = SuperResolutionDataset(test_image_paths) if task == "super_resolution" else DenoisingDataset(test_image_paths)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
@@ -75,6 +75,7 @@ def evaluate_and_save(model_path, task, criterion='', learning_rate='', model=Si
     
     total_psnr, total_ssim, total_lpips = 0.0, 0.0, 0.0
     os.makedirs("outputs/eval_results", exist_ok=True)
+    model_name = type(model).__name__
     
     print(f"Rozpoczynam ewaluację {len(dataloader)} obrazów...")
     with torch.no_grad():
@@ -93,10 +94,11 @@ def evaluate_and_save(model_path, task, criterion='', learning_rate='', model=Si
             total_lpips += metrics["LPIPS"]
             
             if idx < 3:
-                Image.fromarray((input_img * 255).astype(np.uint8)).save(f"outputs/eval_results/sample_{idx}_input.png")
-                Image.fromarray((pred_img * 255).astype(np.uint8)).save(f"outputs/eval_results/sample_{idx}_pred.png")
-                Image.fromarray((target_img * 255).astype(np.uint8)).save(f"outputs/eval_results/sample_{idx}_target.png")
+                prefix = f"{task}_{model_name}_{criterion}_lr{learning_rate}_sample_{idx}"
                 
+                Image.fromarray((input_img * 255).astype(np.uint8)).save(f"outputs/eval_results/{prefix}_input.png")
+                Image.fromarray((pred_img * 255).astype(np.uint8)).save(f"outputs/eval_results/{prefix}_pred.png")
+                Image.fromarray((target_img * 255).astype(np.uint8)).save(f"outputs/eval_results/{prefix}_target.png")
     return {
         "Task": task,
         "Criterion": criterion,

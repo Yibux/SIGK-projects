@@ -53,7 +53,6 @@ class ExposureUNet(nn.Module):
         )
 
     def forward(self, x):
-        # Ścieżka kodera
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
@@ -84,8 +83,7 @@ class ExposureUNet(nn.Module):
         u4 = torch.cat([x1, u4], dim=1)
         u4 = self.conv_up4(u4)
         
-        # Generacja dwóch obrazów
-        under_img = self.out_under(u4) # Obraz dla EV = -2.7
-        over_img = self.out_over(u4)   # Obraz dla EV = +2.7
+        under_img = self.out_under(u4)
+        over_img = self.out_over(u4)
         
         return under_img, over_img

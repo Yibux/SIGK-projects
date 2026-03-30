@@ -104,8 +104,6 @@ def evaluate():
         psnr_under_list.append(psnr_u); psnr_over_list.append(psnr_o)
         lpips_under_list.append(lpips_u); lpips_over_list.append(lpips_o)
 
-        # 4. SKŁADANIE HDR ALGORYTMEM DEBEVECA
-        # Pobieranie czasów naświetlania
         exif_input = get_exif(input_path)
         exif_under = get_exif(gt_under_path)
         exif_over = get_exif(gt_over_path)
@@ -116,25 +114,20 @@ def evaluate():
             float(exif_over.get('ExposureTime', 1.0))
         ], dtype=np.float32)
 
-        images_list = [out_under_cv2, input_cv2, out_over_cv2] # Zauważ, że używamy WYGENEROWANYCH obrazów!
+        images_list = [out_under_cv2, input_cv2, out_over_cv2]
 
-        # Odzyskiwanie funkcji odpowiedzi kamery (CRF) metodą SVD
         calibrate = cv2.createCalibrateDebevec()
         crf = calibrate.process(images_list, times)
         
-        # Złączenie w HDR
         merge = cv2.createMergeDebevec()
         generated_hdr = merge.process(images_list, times, crf)
 
-        # 5. METRYKI HDR (Dynamic Range)
         orig_hdr = read_hdr(original_hdr_path)
         
         dr_orig = measure_ev_range(orig_hdr)
         dr_new = measure_ev_range(generated_hdr)
         
         dr_results[scene] = {'orig': dr_orig, 'new': dr_new}
-
-    # DRUKOWANIE WYNIKÓW (gotowe do wklejenia w sprawozdanie!)
     
     print("\n" + "="*50)
     print("Tabela 1: Metryki PSNR i LPIPS (Średnie dla C40-C46)")

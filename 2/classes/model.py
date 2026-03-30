@@ -22,18 +22,14 @@ class ExposureUNet(nn.Module):
     def __init__(self):
         super(ExposureUNet, self).__init__()
         
-        # Wejście: 3 kanały (Oryginalny obraz LDR)
         self.inc = DoubleConv(3, 64)
         
-        # Koder (Downsampling)
         self.down1 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(64, 128))
         self.down2 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(128, 256))
         self.down3 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(256, 512))
         
-        # Bottleneck
         self.down4 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(512, 1024))
         
-        # Dekoder (Upsampling) + Skip connections (in_channels = out_channels ze złączenia)
         self.up1 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
         self.conv_up1 = DoubleConv(1024, 512)
         
@@ -46,8 +42,6 @@ class ExposureUNet(nn.Module):
         self.up4 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
         self.conv_up4 = DoubleConv(128, 64)
         
-        # Dwie osobne "głowy" wyjściowe dla naszych dwóch docelowych ekspozycji
-        # Wykorzystujemy Sigmoid, zakladając, że tensory obrazów będą w zakresie [0, 1]
         self.out_under = nn.Sequential(
             nn.Conv2d(64, 3, kernel_size=1),
             nn.Sigmoid()
@@ -66,9 +60,7 @@ class ExposureUNet(nn.Module):
         x4 = self.down3(x3)
         x5 = self.down4(x4)
         
-        # Ścieżka dekodera z uwzględnieniem połączeń omijających (skip connections)
         u1 = self.up1(x5)
-        # Interpolacja w razie niezgodności wymiarów (np. przy nieparzystych wymiarach wejścia)
         if u1.shape != x4.shape:
             u1 = F.interpolate(u1, size=x4.shape[2:], mode='bilinear', align_corners=True)
         u1 = torch.cat([x4, u1], dim=1)

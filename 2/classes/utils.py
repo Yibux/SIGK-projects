@@ -72,7 +72,7 @@ def tone_map_reinhard(hdr_image: ndarray) -> ndarray:
 if __name__ == "__main__":
     # Pamiętaj o podmianie ścieżek na własne!
     HDR_PATH = "path_to_hdr"
-    LDR_PATH = "path_to_jpg"
+    LDR_PATH = "D:\\studia\\Studia 2 stopnia\\Semestr 3\\SIGK\\SIGK-projects\\dataset\\HDREye\\images\\Bracketed_images\\C05\\DSC02992.jpg"
     
     # read LDR image and show metadata
     metadata = get_exif(LDR_PATH)
@@ -80,12 +80,12 @@ if __name__ == "__main__":
     print(f"FNumber: {metadata.get('FNumber')}")
     
     # read HDR image and calculate Dynamic Range
-    hdr_img = read_hdr(HDR_PATH)
-    print(f"Data type: {hdr_img.dtype}")
-    print(f"Range: {hdr_img.min()} do {hdr_img.max()}")
-    print(f"Dynamic Range: {measure_ev_range(hdr_img)}")
+    # hdr_img = read_hdr(HDR_PATH)
+    # print(f"Data type: {hdr_img.dtype}")
+    # print(f"Range: {hdr_img.min()} do {hdr_img.max()}")
+    # print(f"Dynamic Range: {measure_ev_range(hdr_img)}")
     
-    # tonemap HDR image and show it on the screen
-    gamma_corrected = tone_map_reinhard(hdr_img)
-    plt.imshow(gamma_corrected)
-    plt.show()
+    # # tonemap HDR image and show it on the screen
+    # gamma_corrected = tone_map_reinhard(hdr_img)
+    # plt.imshow(gamma_corrected)
+    # plt.show()

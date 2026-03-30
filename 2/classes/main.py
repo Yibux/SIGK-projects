@@ -44,20 +44,15 @@ def train():
             targets_under = batch['target_under'].to(device) # Docelowe -2.7 EV [cite: 14]
             targets_over = batch['target_over'].to(device)   # Docelowe +2.7 EV [cite: 14]
 
-            # Wyzerowanie gradientów
             optimizer.zero_grad()
 
-            # Forward pass (przepuszczenie przez sieć)
             out_under, out_over = model(inputs)
 
-            # Obliczenie straty dla obu wyjść
             loss_under = criterion(out_under, targets_under)
             loss_over = criterion(out_over, targets_over)
             
-            # Całkowita strata to suma błędów z obu obrazów
             loss = loss_under + loss_over
 
-            # Backward pass (propagacja wsteczna) i krok optymalizatora
             loss.backward()
             optimizer.step()
 

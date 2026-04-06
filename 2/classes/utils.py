@@ -72,10 +72,11 @@ def tone_map_reinhard(hdr_image: ndarray) -> ndarray:
 if __name__ == "__main__":
     # Pamiętaj o podmianie ścieżek na własne!
     HDR_PATH = "path_to_hdr"
-    LDR_PATH = "D:\\studia\\Studia 2 stopnia\\Semestr 3\\SIGK\\SIGK-projects\\dataset\\HDREye\\images\\Bracketed_images\\C05\\DSC02992.jpg"
+    LDR_PATH = "D:\\studia\\Studia 2 stopnia\\Semestr 3\\SIGK\\SIGK-projects\\dataset\\HDREye\\images\\Bracketed_images\\C23\\DSC00810.JPG_crop.jpg"
     
     # read LDR image and show metadata
     metadata = get_exif(LDR_PATH)
+    print(metadata)
     print(f"Exposure Time: {metadata.get('ExposureTime')}")
     print(f"FNumber: {metadata.get('FNumber')}")
     

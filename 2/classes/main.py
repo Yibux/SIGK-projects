@@ -4,17 +4,19 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import os
+import time
 
 from dataset import HDREyeDataset
 from model import ExposureUNet
-from constants import DATASET_ROOT, OUTPUT_DIR_PATH, BATCH_SIZE, EPOCHS, LEARNING_RATE
+from constants import DATASET_ROOT, OUTPUT_DIR_PATH, BATCH_SIZE, EPOCHS, LEARNING_RATE, SAMPLES_LABELS_INPUT, SAMPLES_LABELS_TARGET_UNDER, SAMPLES_LABELS_TARGET_OVER, RESIZE_DIM
 
 def train():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
+    # device = torch.device("cpu")
     print(f"Trenuję na urządzeniu: {device}")
     
     transform = transforms.Compose([
-        transforms.Resize((256, 256)),
+        transforms.Resize(RESIZE_DIM),
         transforms.ToTensor()
     ])
 
@@ -22,12 +24,8 @@ def train():
     test_scenes = [f"C{i}" for i in range(40, 47)]
     train_scenes = [scene for scene in all_scenes if scene not in test_scenes]
     
-    if not train_scenes:
-        print("UWAGA: Nie znaleziono folderu z danymi. Używam atrapy do testów.")
-        train_scenes = ["mock_scene_1", "mock_scene_2"]
-
     train_dataset = HDREyeDataset(root_dir=DATASET_ROOT, scene_list=train_scenes, transform=transform)
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=1, persistent_workers=True)
 
     model = ExposureUNet().to(device)
     
@@ -36,24 +34,27 @@ def train():
 
     print("Rozpoczynam trening...")
     for epoch in range(EPOCHS):
+        time_start = time.time()
         model.train()
         running_loss = 0.0
         
         for batch_idx, batch in enumerate(train_loader):
-            inputs = batch['input'].to(device)
-            targets_under = batch['target_under'].to(device) # Docelowe -2.7 EV [cite: 14]
-            targets_over = batch['target_over'].to(device)   # Docelowe +2.7 EV [cite: 14]
+            inputs = batch[SAMPLES_LABELS_INPUT].to(device)
+            targets_under = batch[SAMPLES_LABELS_TARGET_UNDER].to(device)
+            targets_over = batch[SAMPLES_LABELS_TARGET_OVER].to(device)
 
             optimizer.zero_grad()
 
             out_under, out_over = model(inputs)
-
+            
             loss_under = criterion(out_under, targets_under)
             loss_over = criterion(out_over, targets_over)
-            
             loss = loss_under + loss_over
 
             loss.backward()
+            
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            
             optimizer.step()
 
             running_loss += loss.item()
@@ -62,10 +63,13 @@ def train():
                 print(f"Epoka [{epoch+1}/{EPOCHS}], Batch [{batch_idx}/{len(train_loader)}], Loss: {loss.item():.4f}")
 
         epoch_loss = running_loss / len(train_loader)
-        print(f"--- Koniec Epoki {epoch+1} | Średnia strata: {epoch_loss:.4f} ---")
+        time_end = time.time()
+        print(f"--- Koniec Epoki {epoch+1} | Średnia strata: {epoch_loss:.4f} | Czas: {time_end - time_start:.2f}s ---")
 
-    torch.save(model.state_dict(), f"{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}.pth")
-    print(f"Model zapisany pomyślnie jako '{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}.pth'!")
+    if not os.path.exists(OUTPUT_DIR_PATH):
+        os.makedirs(OUTPUT_DIR_PATH)
+    torch.save(model.state_dict(), f"{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}_{RESIZE_DIM}.pth")
+    print(f"Model zapisany pomyślnie jako '{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}_{RESIZE_DIM}.pth'!")
 
 if __name__ == "__main__":
     train()

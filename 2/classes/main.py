@@ -66,10 +66,11 @@ def train():
         time_end = time.time()
         print(f"--- Koniec Epoki {epoch+1} | Średnia strata: {epoch_loss:.4f} | Czas: {time_end - time_start:.2f}s ---")
 
-    if not os.path.exists(OUTPUT_DIR_PATH):
-        os.makedirs(OUTPUT_DIR_PATH)
-    torch.save(model.state_dict(), f"{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}_{RESIZE_DIM}.pth")
-    print(f"Model zapisany pomyślnie jako '{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}_{RESIZE_DIM}.pth'!")
+        if not os.path.exists(OUTPUT_DIR_PATH):
+            os.makedirs(OUTPUT_DIR_PATH)
+        output_model_path = f"{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}_{RESIZE_DIM}_{LEARNING_RATE}_{epoch+1}_{epoch_loss:.4f}.pth"
+        torch.save(model.state_dict(), output_model_path)
+        print(f"Model zapisany pomyślnie jako '{output_model_path}'!")
 
 if __name__ == "__main__":
     train()

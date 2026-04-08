@@ -56,29 +56,44 @@ def evaluate():
             print(f"Brak wystarczającej liczby zdjęć w {scene}, pomijam.")
             continue
         
-        file_error = False
         files_with_exposure = []
         for file_path in jpg_files:
             try:
                 exif_data = get_exif(file_path)
+                if not exif_data or 'ExposureTime' not in exif_data:
+                    raise ValueError("Brak klucza ExposureTime w EXIF")
+                
+                exp_time = float(exif_data.get('ExposureTime', 1.0))
+                ev_val = np.log2(exp_time) if exp_time > 0 else 0.0 
+                
             except Exception as e:
-                print(f"Błąd podczas odczytywania metadanych z {file_path}: {e}")
-                file_error = True
-                continue
-            exp_time = float(exif_data.get('ExposureTime', 1.0))
-            files_with_exposure.append((file_path, exp_time))
+                filename = os.path.basename(file_path).lower()
+                if "0.jpg" in filename:
+                    ev_val = 0.0
+                elif "-27.jpg" in filename:
+                    ev_val = -2.7
+                elif "27.jpg" in filename:
+                    ev_val = 2.7
+                else:
+                    continue
+                
+                exp_time = 2 ** ev_val 
 
-        if file_error:
-            print(f"Wystąpiły błędy z plikami w {scene}, pomijam tę scenę.")
+            files_with_exposure.append((file_path, exp_time, abs(0 - ev_val)))
+
+        if len(files_with_exposure) < 3:
             continue
+            
         files_with_exposure.sort(key=lambda x: x[1])
 
-        gt_under_path = files_with_exposure[0][0]
-        input_path = files_with_exposure[len(files_with_exposure)//2][0]
-        gt_over_path = files_with_exposure[-1][0]
+        gt_under_path, time_under, _ = files_with_exposure[0]
+        gt_over_path, time_over, _ = files_with_exposure[-1]
+        
+        closest_to_zero = min(files_with_exposure, key=lambda x: x[2])
+        input_path, time_input, _ = closest_to_zero
 
         original_hdr_path = os.path.join(HDR_ORIGINAL_ROOT, f"{scene}_HDR.hdr")
-        print(f"Ścieżki: \n  Underexposed: {gt_under_path}\n  Input: {input_path}\n  Overexposed: {gt_over_path}\n  Original HDR: {original_hdr_path}")
+        print(f"Ścieżki: \n  Underexposed: {gt_under_path}\n  Input: {input_path}\n  Overexposed: {gt_over_path}")
         
         if not os.path.exists(input_path):
             print(f"Brak plików dla {scene}, pomijam.")
@@ -115,15 +130,7 @@ def evaluate():
         psnr_under_list.append(psnr_u); psnr_over_list.append(psnr_o)
         lpips_under_list.append(lpips_u); lpips_over_list.append(lpips_o)
 
-        exif_input = get_exif(input_path)
-        exif_under = get_exif(gt_under_path)
-        exif_over = get_exif(gt_over_path)
-        
-        times = np.array([
-            float(exif_under.get('ExposureTime', 1.0)), 
-            float(exif_input.get('ExposureTime', 1.0)), 
-            float(exif_over.get('ExposureTime', 1.0))
-        ], dtype=np.float32)
+        times = np.array([time_under, time_input, time_over], dtype=np.float32)
 
         images_list = [out_under_cv2, input_cv2, out_over_cv2]
 
@@ -135,7 +142,7 @@ def evaluate():
 
         orig_hdr = read_hdr(original_hdr_path)
         
-        dr_orig = measure_ev_range(orig_hdr)
+        dr_orig = measure_ev_range(orig_hdr) if orig_hdr is not None else 0.0
         dr_new = measure_ev_range(generated_hdr)
         
         dr_results[scene] = {'orig': dr_orig, 'new': dr_new, 'psnr_under': psnr_u, 'psnr_over': psnr_o}
@@ -148,14 +155,14 @@ def evaluate():
         
         cv2.imwrite(os.path.join(scene_out_dir, "gen_under.jpg"), cv2.cvtColor(out_under_cv2, cv2.COLOR_RGB2BGR))
         cv2.imwrite(os.path.join(scene_out_dir, "gen_over.jpg"), cv2.cvtColor(out_over_cv2, cv2.COLOR_RGB2BGR))
-        
         cv2.imwrite(os.path.join(scene_out_dir, "gen_hdr.hdr"), generated_hdr)
     
     print("\n" + "="*50)
-    print("Tabela 1: Metryki PSNR i LPIPS (Średnie dla C40-C46)")
-    print("Metoda \t\t PSNR \t\t LPIPS")
-    print(f"underexposed \t {np.mean(psnr_under_list):.4f} \t {np.mean(lpips_under_list):.4f}")
-    print(f"overexposed \t {np.mean(psnr_over_list):.4f} \t {np.mean(lpips_over_list):.4f}")
+    print("Tabela 1: Metryki PSNR i LPIPS (Średnie dla test_scenes)")
+    if psnr_under_list:
+        print("Metoda \t\t PSNR \t\t LPIPS")
+        print(f"underexposed \t {np.mean(psnr_under_list):.4f} \t {np.mean(lpips_under_list):.4f}")
+        print(f"overexposed \t {np.mean(psnr_over_list):.4f} \t {np.mean(lpips_over_list):.4f}")
     print("="*50)
     
     print("\n" + "="*50)
@@ -165,6 +172,7 @@ def evaluate():
         if scene in dr_results:
             print(f"{scene} \t {dr_results[scene]['orig']:.4f} \t\t\t {dr_results[scene]['new']:.4f}")
     print("="*50)
+    
     results_df = pd.DataFrame({
         'Scene': list(dr_results.keys()),
         'Dynamic Range Original': [dr_results[scene]['orig'] for scene in dr_results],

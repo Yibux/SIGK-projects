@@ -27,15 +27,32 @@ class HDREyeDataset(Dataset):
             for file_path in jpg_files:
                 try:
                     exif_data = get_exif(file_path)
-                    exp_time = float(exif_data.get('ExposureTime', 1.0))
                     
+                    if not exif_data or 'ExposureTime' not in exif_data:
+                        raise ValueError("Brak klucza ExposureTime w EXIF")
+                        
+                    exp_time = float(exif_data.get('ExposureTime', 1.0))
                     files_with_exposure.append((file_path, exp_time, abs(0 - exp_time)))
+                    
                 except Exception as e:
-                    print(f"Error occurred while processing {file_path}: {e}")
+                    filename = os.path.basename(file_path).lower()
+                    
+                    if "0.jpg" in filename:
+                        exp_val = 0.0
+                    elif "-27.jpg" in filename:
+                        exp_val = -2.7
+                    elif "27.jpg" in filename:
+                        exp_val = 2.7
+                    else:
+                        continue
+                    
+                    files_with_exposure.append((file_path, exp_val, abs(0 - exp_val)))
+                    
             
             files_with_exposure.sort(key=lambda x: x[1])
             
             if len(files_with_exposure) < 3:
+                print(f"Nie można znaleźć 3 zdjęć z różnymi czasami ekspozycji w {scene}, pomijam tę scenę.")
                 continue
             
             under_path = files_with_exposure[0][0]  

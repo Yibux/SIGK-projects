@@ -2,45 +2,79 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class DoubleConv(nn.Module):
-    """(convolution => [BN] => ReLU) * 2"""
-    def __init__(self, in_channels, out_channels):
+class ChannelAttention(nn.Module):
+    def __init__(self, in_channels, reduction=16):
         super().__init__()
-        self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(in_channels, in_channels // reduction, bias=False),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
+            nn.Linear(in_channels // reduction, in_channels, bias=False),
+            nn.Sigmoid()
         )
 
     def forward(self, x):
-        return self.double_conv(x)
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y.expand_as(x)
+
+class ResAttBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+        
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        
+        self.ca = ChannelAttention(out_channels)
+
+        self.shortcut = nn.Sequential()
+        if in_channels != out_channels:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
+                nn.BatchNorm2d(out_channels)
+            )
+
+    def forward(self, x):
+        res = self.shortcut(x)
+        
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        
+        out = self.conv2(out)
+        out = self.bn2(out)
+        
+        out = self.ca(out)     
+        out += res             
+        out = self.relu(out)
+        
+        return out
 
 class ExposureUNet(nn.Module):
     def __init__(self):
         super(ExposureUNet, self).__init__()
         
-        self.inc = DoubleConv(3, 64)
-        
-        self.down1 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(64, 128))
-        self.down2 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(128, 256))
-        self.down3 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(256, 512))
-        
-        self.down4 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(512, 1024))
+        self.inc = ResAttBlock(3, 64)
+        self.down1 = nn.Sequential(nn.MaxPool2d(2), ResAttBlock(64, 128))
+        self.down2 = nn.Sequential(nn.MaxPool2d(2), ResAttBlock(128, 256))
+        self.down3 = nn.Sequential(nn.MaxPool2d(2), ResAttBlock(256, 512))
+        self.down4 = nn.Sequential(nn.MaxPool2d(2), ResAttBlock(512, 1024))
         
         self.up1 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
-        self.conv_up1 = DoubleConv(1024, 512)
+        self.conv_up1 = ResAttBlock(1024, 512)
         
         self.up2 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
-        self.conv_up2 = DoubleConv(512, 256)
+        self.conv_up2 = ResAttBlock(512, 256)
         
         self.up3 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
-        self.conv_up3 = DoubleConv(256, 128)
+        self.conv_up3 = ResAttBlock(256, 128)
         
         self.up4 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
-        self.conv_up4 = DoubleConv(128, 64)
+        self.conv_up4 = ResAttBlock(128, 64)
         
         self.out_under = nn.Sequential(
             nn.Conv2d(64, 3, kernel_size=1),
@@ -87,3 +121,4 @@ class ExposureUNet(nn.Module):
         over_img = self.out_over(u4)
         
         return under_img, over_img
+    

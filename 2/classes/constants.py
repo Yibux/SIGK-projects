@@ -7,9 +7,11 @@ OUTPUT_DIR_PATH = os.path.join(BASE_DIR, "../outputs")
 HDR_ORIGINAL_ROOT = os.path.join(BASE_DIR, "../../dataset/HDREye/images/HDR")
 
 # training settings
+ACCUMULATION_STEPS = 4
 BATCH_SIZE = 1
-EPOCHS = 50
-LEARNING_RATE = 1e-3
+EPOCHS = 20
+LEARNING_RATE = 1e-4
+CRITERION = "VGG"
 
 # dataset settings
 EXPOSURE_TIMES = [-2.7, 0.0, 2.7]
@@ -19,4 +21,4 @@ SAMPLES_LABELS_TARGET_OVER = "target_over"
 RESIZE_DIM = (1024, 1024)
 
 # output
-OUTPUT_MODEL_NAME = f"exposure_unet_{EPOCHS}_{RESIZE_DIM}_{LEARNING_RATE}.pth"
+OUTPUT_MODEL_NAME = f"exposure_unet_{EPOCHS}_{RESIZE_DIM}_lr{LEARNING_RATE}_{CRITERION}.pth"

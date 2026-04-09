@@ -10,7 +10,7 @@ import pandas as pd
 
 from model import ExposureUNet
 from utils import measure_ev_range, read_hdr, get_exif
-from constants import DATASET_ROOT, OUTPUT_DIR_PATH, HDR_ORIGINAL_ROOT, EPOCHS, RESIZE_DIM
+from constants import DATASET_ROOT, OUTPUT_DIR_PATH, HDR_ORIGINAL_ROOT, EPOCHS, RESIZE_DIM, LEARNING_RATE, OUTPUT_MODEL_NAME
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 def calculate_psnr(img1, img2):
@@ -26,7 +26,7 @@ def evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     model = ExposureUNet().to(device)
-    model_path = f"{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}_{RESIZE_DIM}.pth"
+    model_path = f"{OUTPUT_DIR_PATH}/{OUTPUT_MODEL_NAME}"
     model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))
     model.eval()
 

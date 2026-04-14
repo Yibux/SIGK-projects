@@ -119,10 +119,10 @@ def train():
         if not os.path.exists(OUTPUT_DIR_PATH):
             os.makedirs(OUTPUT_DIR_PATH)
             
-        # if (epoch + 1) % 10 == 0 or epoch == EPOCHS - 1:
-        output_model_path = f"{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}_{RESIZE_DIM}_lr{LEARNING_RATE}_ep{epoch+1}_{epoch_loss:.4f}.pth"
-        torch.save(model.state_dict(), output_model_path)
-        print(f"Model zapisany pomyślnie jako '{output_model_path}'!")
+        if (epoch + 1) % 50 == 0 or epoch == EPOCHS - 1:
+            output_model_path = f"{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}_{RESIZE_DIM}_lr{LEARNING_RATE}_ep{epoch+1}_{epoch_loss:.4f}.pth"
+            torch.save(model.state_dict(), output_model_path)
+            print(f"Model zapisany pomyślnie jako '{output_model_path}'!")
     
     final_model_path = f"{OUTPUT_DIR_PATH}/exposure_unet_{EPOCHS}_{RESIZE_DIM}_lr{LEARNING_RATE}_{CRITERION}.pth"
     torch.save(model.state_dict(), final_model_path)

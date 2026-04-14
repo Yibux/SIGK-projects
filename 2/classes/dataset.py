@@ -32,28 +32,31 @@ class HDREyeDataset(Dataset):
                         raise ValueError("Brak klucza ExposureTime w EXIF")
                         
                     exp_time = float(exif_data.get('ExposureTime', 1.0))
-                    files_with_exposure.append((file_path, exp_time, abs(0 - exp_time)))
+                    ev_val = float(exif_data.get('ExposureBiasValue', 1.0))
+                    files_with_exposure.append((file_path, exp_time, abs(0 - ev_val)))
                     
                 except Exception as e:
                     filename = os.path.basename(file_path).lower()
                     
                     if "0.jpg" in filename:
-                        exp_val = 0.0
+                        ev_val = 0.0
                     elif "-27.jpg" in filename:
-                        exp_val = -2.7
+                        ev_val = -2.7
                     elif "27.jpg" in filename:
-                        exp_val = 2.7
+                        ev_val = 2.7
                     else:
                         continue
                     
-                    files_with_exposure.append((file_path, exp_val, abs(0 - exp_val)))
+                    exp_time = 2 ** ev_val
                     
-            
+                    files_with_exposure.append((file_path, exp_time, abs(0 - ev_val)))
+                    
             files_with_exposure.sort(key=lambda x: x[1])
             
             if len(files_with_exposure) < 3:
                 print(f"Nie można znaleźć 3 zdjęć z różnymi czasami ekspozycji w {scene}, pomijam tę scenę.")
                 continue
+                
             
             under_path = files_with_exposure[0][0]  
             over_path = files_with_exposure[-1][0]  
@@ -61,7 +64,13 @@ class HDREyeDataset(Dataset):
             closest_to_zero = min(files_with_exposure, key=lambda x: abs(x[2]))
             input_path = closest_to_zero[0]
             
+            time_under = files_with_exposure[0][1]
+            time_over = files_with_exposure[-1][1]
+            time_input = closest_to_zero[1]
+            
             self.samples.append({
+                'scene': scene,
+                'times': (time_under, time_input, time_over),
                 SAMPLES_LABELS_INPUT: input_path,
                 SAMPLES_LABELS_TARGET_UNDER: under_path,
                 SAMPLES_LABELS_TARGET_OVER: over_path
@@ -89,8 +98,8 @@ class HDREyeDataset(Dataset):
         }
         
 if __name__ == "__main__":
-    ROOT_DIR = ""
-    SCENE_LIST = ["C23", "C06", "C07"]
+    ROOT_DIR = "D:\\studia\\Studia 2 stopnia\\Semestr 3\\SIGK\\SIGK-projects\\dataset\\HDREye\\images\\Bracketed_images"
+    SCENE_LIST = [f"C{i}" for i in range(1, 40)]
     
     dataset = HDREyeDataset(root_dir=ROOT_DIR, scene_list=SCENE_LIST)
     

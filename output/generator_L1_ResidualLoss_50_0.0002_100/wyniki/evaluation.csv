@@ -1,0 +1,2 @@
+Model Name,Loss Function,FLIP,LPIPS,SSIM,Hausdorff Distance
+generator_L1_ResidualLoss_50_0.0002_100,L1_ResidualLoss,0.004649089952193511,0.03647883489815892,0.9965863326099195,0.0

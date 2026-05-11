@@ -264,7 +264,7 @@ def train(
             sample_real = (real_imgs[:16].data + 1) / 2.0
             comparison = torch.cat((sample_real, sample_fake), 0)
             
-            img_path = os.path.join(cfg.SAMPLES_DIR, f"epoch_{epoch}_{loss_function}.png")
+            img_path = os.path.join(cfg.SAMPLES_DIR, f"epoch_{epoch}_{loss_function}_{lr}_{l1_weight}.png")
             save_image(comparison, img_path, nrow=8)
 
     generator_name = f"generator_{loss_function}_{epochs}_{lr}_{l1_weight}.pth"
@@ -284,9 +284,16 @@ if __name__ == "__main__":
     lambda_l1 = cfg.LAMBDA_L1
     model_name = f"generator_{loss_function_name}_{epochs}_{learning_rate}_{lambda_l1}"
     
-    eval_without_training(
-        model_path=os.path.join(cfg.MODELS_DIR, f"{model_name}.pth"),
-        loss_function_name=loss_function_name,
-        model_name=model_name
+    train(
+        loss_function=loss_function_name, 
+        num_epochs=epochs, 
+        learning_rate=learning_rate, 
+        lambda_l1=lambda_l1
     )
+    
+    # evaluate_model(
+    #     model_path=os.path.join(cfg.MODELS_DIR, f"{model_name}.pth"),
+    #     loss_function_name=loss_function_name,
+    #     model_name=model_name
+    # )
     

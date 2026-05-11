@@ -38,9 +38,9 @@ class PhongDataset(Dataset):
 
         params = self.data_frame.iloc[idx, 1:].values.astype('float32')
         
-        params[0:3] = params[0:3] / 20.0  # model_tx, model_ty, model_tz
-        params[3:6] = params[3:6] / 255.0 # diffuse_r, g, b
-        params[6] = params[6] / 20.0      # shininess (zakładając max 20)
+        params[0:3] = params[0:3] / 3.0   # model_tx, model_ty, model_tz
+        params[3:6] = params[3:6] / 255.0  # diffuse_r, g, b
+        params[6] = (params[6] - 3.0) / (20.0 - 3.0)      # shininess
         params[7:10] = params[7:10] / 20.0 # light_px, py, pz
         
         params_tensor = torch.tensor(params)

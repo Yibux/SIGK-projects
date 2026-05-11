@@ -11,9 +11,9 @@ uniform float material_shininess;
 uniform vec3 light_position;
 uniform vec3 camera_position;
 
-const vec3 material_ambient = vec3(0.3, 0.3, 0.3);
+const vec3 material_ambient = vec3(76.0 / 255.0, 76.0 / 255.0, 76.0 / 255.0);
 const vec3 material_specular = vec3(1.0, 1.0, 1.0);
-const vec3 light_ambient = vec3(0.1, 0.1, 0.1);
+const vec3 light_ambient = vec3(25.0 / 255.0, 25.0 / 255.0, 25.0 / 255.0);
 const vec3 light_diffuse = vec3(1.0, 1.0, 1.0);
 const vec3 light_specular = vec3(1.0, 1.0, 1.0);
 

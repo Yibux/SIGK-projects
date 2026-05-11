@@ -46,17 +46,17 @@ class PhongWindow(BaseWindow):
         self.ctx.clear(0.0, 0.0, 0.0, 0.0)
         self.ctx.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
 
-        camera_position = [5.0, 5.0, 15.0]
+        camera_position = [2.0, 2.0, 6.0]
 
         valid_position = False
         while not valid_position:
             model_translation = [
-                random.uniform(-20.0, 20.0),
-                random.uniform(-20.0, 20.0),
-                random.uniform(-20.0, 20.0)
+                random.uniform(-2.5, 2.5),
+                random.uniform(-2.5, 2.5),
+                random.uniform(-3.0, 2.0)
             ]
             dist_to_camera = np.linalg.norm(np.array(model_translation) - np.array(camera_position))
-            if dist_to_camera > 2.5:
+            if dist_to_camera > 1.5:
                 valid_position = True
 
         color_r = random.uniform(0.0, 255.0)

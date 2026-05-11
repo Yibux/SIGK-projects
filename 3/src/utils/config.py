@@ -10,15 +10,15 @@ CSV_FILE = os.path.join(OUTPUT_PATH, 'dataset.csv')
 SAMPLES_DIR = os.path.join(BASE_DIR, 'samples')
 MODELS_DIR = os.path.join(BASE_DIR, 'saved_models')
 
-BATCH_SIZE = 128
-NUM_EPOCHS = 50
+BATCH_SIZE = 16
+NUM_EPOCHS = 150
 LEARNING_RATE = 0.0002
 BETA_1 = 0.5
 BETA_2 = 0.999
 
 CONDITION_DIM = 10
 
-LAMBDA_L1 = 100
+LAMBDA_L1 = 10
 
 GL_VERSION = (3, 3)
 WINDOW_TITLE = 'SIGK 4'

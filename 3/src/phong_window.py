@@ -74,13 +74,13 @@ class PhongWindow(BaseWindow):
         
         model_matrix = Matrix44.from_translation(model_translation)
         proj = Matrix44.perspective_projection(45.0, self.aspect_ratio, 0.1, 1000.0)
-        lookat = Matrix44.look_at(
+        look_at_camera = Matrix44.look_at(
             camera_position,
             (0.0, 0.0, 0.0),
             (0.0, 1.0, 0.0),
         )
 
-        model_view_projection = proj * lookat * model_matrix
+        model_view_projection = proj * look_at_camera * model_matrix
 
         self.model_view_projection.write(model_view_projection.astype('f4').tobytes())
         self.model_matrix.write(model_matrix.astype('f4').tobytes())
@@ -91,8 +91,15 @@ class PhongWindow(BaseWindow):
 
         self.vao.render()
         if self.output_path:
+            viewport = self.wnd.viewport
+            image_size = viewport[2], viewport[3]
+            image_data = self.wnd.fbo.read(
+                viewport=viewport,
+                components=4,
+                alignment=1,
+            )
             img = (
-                Image.frombuffer('RGBA', self.wnd.size, self.wnd.fbo.read(components=4))
+                Image.frombytes('RGBA', image_size, image_data)
                      .transpose(Image.Transpose.FLIP_TOP_BOTTOM)
             )
             img_name = f'image_{self.frame:04}.png'

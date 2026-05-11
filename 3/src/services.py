@@ -231,6 +231,7 @@ def train(
             valid = torch.ones(real_imgs.size(0), 1, device=device, requires_grad=False)
             fake = torch.zeros(real_imgs.size(0), 1, device=device, requires_grad=False)
 
+            # train Generator    
             optimizer_G.zero_grad()
             fake_imgs = generator(conditions)
 
@@ -239,11 +240,15 @@ def train(
             
             loss_pixel = criterion_pixel(fake_imgs, real_imgs)
             
+            # karzemy generator nie tylko za to, że jego obrazy są rozpoznawane jako 
+            # fałszywe, ale także za to, że roznia sie od prawdziwego renderu
+    
             loss_G = loss_gan + l1_weight * loss_pixel
             
             loss_G.backward()
             optimizer_G.step()
 
+            # train Discriminator
             optimizer_D.zero_grad()
 
             pred_real = discriminator(real_imgs, conditions)
@@ -252,6 +257,8 @@ def train(
             pred_fake = discriminator(fake_imgs.detach(), conditions)
             loss_fake = criterion_gan(pred_fake, fake)
 
+            # dyskrimantor jest karany za to, że nie rozpoznaje prawdziwych renderów 
+            # jako prawdziwe i fałszywych jako fałszywe
             loss_D = (loss_real + loss_fake) / 2
             
             loss_D.backward()

@@ -1,0 +1,7 @@
+Metoda,IoU,Dice,Chamfer
+bunny_flow,0.2637,0.4174,0.0026
+dragon_small_flow,0.1837,0.3104,0.0049
+armadillo_small_flow,0.2298,0.3737,0.0026
+bunny_flow_asian_dragon_really_small,0.1542,0.2672,0.0087
+dragon_small_flow_asian_dragon_really_small,0.1908,0.3205,0.004
+armadillo_small_flow_asian_dragon_really_small,0.1994,0.3324,0.0043

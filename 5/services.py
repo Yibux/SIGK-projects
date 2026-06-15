@@ -12,38 +12,88 @@ from config import *
 from dataset import CMUMotionDataset
 from models import MotionTransformerDiffusion, AdvancedMotionLoss
 
-def animate_skeleton_3d(tensor_data, output_filename=None, fps=24):
+def animate_skeleton_3d(tensor_data, output_filename=None, fps=4, action_name=None):
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
-    
-    ax.set_xlim(-40, 40) 
-    ax.set_ylim(-40, 40)
-    ax.set_zlim(-40, 40)
+
+    # BVH data is usually Y-up, while Matplotlib renders Z as the vertical axis.
+    # Reorder coordinates so the skeleton stands on the X-Z ground plane.
+    plot_data = tensor_data[:, :, [0, 2, 1]]
+
+    data_min = plot_data.reshape(-1, DIM).min(axis=0)
+    data_max = plot_data.reshape(-1, DIM).max(axis=0)
+    center = (data_min + data_max) / 2
+    half_range = max((data_max - data_min).max() * 0.75, 6)
+
+    ax.set_xlim(center[0] - half_range, center[0] + half_range)
+    ax.set_ylim(center[1] - half_range, center[1] + half_range)
+    ax.set_zlim(center[2] - half_range, center[2] + half_range)
     ax.set_box_aspect([1, 1, 1])
-    ax.set_title("3D Stickman Motion Visualization")
-    ax.set_xlabel('X Axis')
-    ax.set_ylabel('Y Axis')
-    ax.set_zlabel('Z Axis')
+    ax.view_init(elev=18, azim=-65)
+    ax.set_title(f"Generated motion: {action_name}" if action_name else "Generated stickman motion")
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    ax.set_zlabel("")
+    ax.tick_params(labelsize=7)
+    ax.grid(alpha=0.18)
+    ax.xaxis.pane.set_alpha(0.02)
+    ax.yaxis.pane.set_alpha(0.02)
+    ax.zaxis.pane.set_alpha(0.02)
+
+    connection_colors = [
+        "#222222", "#222222",
+        "#0b6efd", "#0b6efd", "#0b6efd",
+        "#20c997", "#20c997", "#20c997",
+        "#dc3545", "#dc3545", "#dc3545",
+        "#fd7e14", "#fd7e14", "#fd7e14",
+    ]
     
-    points_scatter = ax.scatter([], [], [], c='red', s=40, zorder=3)
+    joint_colors = [
+        "#111111", "#111111", "#111111",
+        "#0b6efd", "#0b6efd", "#0b6efd",
+        "#20c997", "#20c997", "#20c997",
+        "#dc3545", "#dc3545", "#dc3545",
+        "#fd7e14", "#fd7e14", "#fd7e14",
+    ]
+    joint_sizes = [180, 100, 120, 80, 80, 90, 80, 80, 90, 90, 90, 120, 90, 90, 120]
+
+    first_frame = plot_data[0]
+    points_scatter = ax.scatter(
+        first_frame[:, 0],
+        first_frame[:, 1],
+        first_frame[:, 2],
+        c=joint_colors,
+        s=joint_sizes,
+        depthshade=False,
+        zorder=3,
+    )
+    first_head = first_frame[Joint.HEAD]
+    head_scatter = ax.scatter(
+        [first_head[0]],
+        [first_head[1]],
+        [first_head[2]],
+        c="#ffd43b",
+        edgecolors="#111111",
+        s=260,
+        depthshade=False,
+        zorder=4,
+    )
     lines = [
-        ax.plot([], [], [], c='blue', lw=2, zorder=2)[0]
-        for _ in range(len(JOINT_CONNECTIONS))
+        ax.plot([], [], [], c=connection_colors[i], lw=4, solid_capstyle="round", zorder=2)[0]
+        for i in range(len(JOINT_CONNECTIONS))
     ]
     
     def init():
-        points_scatter._offsets3d = ([], [], [])
-        for line in lines:
-            line.set_data(np.array([]), np.array([]))
-            line.set_3d_properties(np.array([]))
-        return [points_scatter] + lines
+        return update(0)
         
     def update(frame_idx):
-        frame_data = tensor_data[frame_idx]
+        frame_data = plot_data[frame_idx]
         xs = frame_data[:, 0]
         ys = frame_data[:, 1]
         zs = frame_data[:, 2]
         points_scatter._offsets3d = (xs, ys, zs)
+        head = frame_data[Joint.HEAD]
+        head_scatter._offsets3d = ([head[0]], [head[1]], [head[2]])
         
         for i, (start_joint, end_joint) in enumerate(JOINT_CONNECTIONS):
             x_coords = np.array([frame_data[start_joint, 0], frame_data[end_joint, 0]])
@@ -51,7 +101,7 @@ def animate_skeleton_3d(tensor_data, output_filename=None, fps=24):
             z_coords = np.array([frame_data[start_joint, 2], frame_data[end_joint, 2]])
             lines[i].set_data(x_coords, y_coords)
             lines[i].set_3d_properties(z_coords)
-        return [points_scatter] + lines
+        return [points_scatter, head_scatter] + lines
         
     T = tensor_data.shape[0]
     anim = animation.FuncAnimation(
@@ -150,7 +200,7 @@ def evaluate_and_visualize(model):
             
             output_filename = f"{action_name}_generated.gif"
             motion_np = generated_motion[0].cpu().numpy()
-            animate_skeleton_3d(motion_np, output_filename, fps=24)
+            animate_skeleton_3d(motion_np, output_filename, fps=4, action_name=action_name)
             
     df = pd.DataFrame(results)
     csv_path = os.path.join(OUTPUT_PATH, 'evaluation_results.csv')

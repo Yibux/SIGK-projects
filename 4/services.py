@@ -93,7 +93,6 @@ def train_vector_field(source_name, target_name):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"--- Trening pola wektorowego (DGCNN): {source_name} -> {target_name} ---")
     
-    # Podmiana modelu na DGCNN
     model = VectorFieldDGCNN(k=20).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
     
